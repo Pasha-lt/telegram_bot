@@ -11,12 +11,24 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 
 def greet_user(bot, update):
+    """
+        Функция которая вызывается когда жмем на кнопку старт
+    :param bot:
+    :param update:
+    :return:
+    """
     logging.info(update.message)
     logging.info('Вызван start')
     update.message.reply_text('Пиши на русском я буду переводить на английский ...')
 
 
 def talk_to_me(bot, update):
+    """
+    Функция которая обрабатывает текстовые сообщения, переводит их с русского на английский язык.
+    :param bot:
+    :param update:
+    :return:
+    """
     user_text = update.message.text
     logging.info(user_text)
     translator = Translator()
@@ -25,6 +37,10 @@ def talk_to_me(bot, update):
 
 
 def main():
+    """
+    Команды инициализации и запуска бота
+    :return:
+    """
     mybot = Updater(settings.your_token)
     db = mybot.dispatcher # специальный обьект который принимает входящие и расскидываем их по командам
     db.add_handler(CommandHandler('start', greet_user))
