@@ -3,7 +3,7 @@ import logging
 from glob import glob
 from random import choice
 
-from telegram import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import MessageHandler, Filters, RegexHandler
 from googletrans import Translator
 from emoji import emojize
@@ -28,8 +28,7 @@ def greet_user(bot, update, user_data):
     emo = get_user_emo(user_data)
     logging.info(update.message)
     text = f'Привет {emo}!\nХочеш рандомную фотку офиса жми /office или пиши на русском, а я буду переводить на английский ...'
-    my_keyboard = ReplyKeyboardMarkup([['Прислать офис', 'Сменить аватарку']], resize_keyboard=True)
-    update.message.reply_text(text, reply_markup=my_keyboard)
+    update.message.reply_text(text, reply_markup=get_keyboard())
 
 
 def talk_to_me(bot, update, user_data):
@@ -44,7 +43,7 @@ def talk_to_me(bot, update, user_data):
     logging.info(user_text)
     translator = Translator()
     user_text = translator.translate(user_text, src='ru', dest='en').text
-    update.message.reply_text(f'{emo}eng=> ' + user_text)
+    update.message.reply_text(f'{emo}eng=> ' + user_text, reply_markup=get_keyboard())
 
 
 def send_office_picture(bot, update, user_data):
@@ -58,16 +57,38 @@ def send_office_picture(bot, update, user_data):
     logging.info(update.message)
     office_list = glob('images/*office*.jp*g')
     office_pic = choice(office_list)
-    bot.send_photo(chat_id=update.message.chat.id, photo=open(office_pic, 'rb'))
+    bot.send_photo(chat_id=update.message.chat.id, photo=open(office_pic, 'rb'), reply_markup=get_keyboard())
 
 
 def change_avatar(bot, update, user_data):
     if 'emo' in user_data:  # Если у пользователя есть аватарка мы ее удаляем
         del user_data['emo']
     emo = get_user_emo(user_data)
-    update.message.reply_text(f'Готово: {emo}')
+    update.message.reply_text(f'Готово: {emo}', reply_markup=get_keyboard())
 
 
+def get_contact(bot, update, user_data):
+    """
+    обработчик контакта
+    :param bot:
+    :param message:
+    :param user_data:
+    :return:
+    """
+    logging.info(update.message.contact)
+    update.message.reply_text(f'Готово: {get_user_emo(user_data)}', reply_markup=get_keyboard())
+
+
+def get_location(bot, update, user_data):
+    """
+    обработчик контакта
+    :param bot:
+    :param message:
+    :param user_data:
+    :return:
+    """
+    logging.info(update.message.location)
+    update.message.reply_text(f'Готово: {get_user_emo(user_data)}', reply_markup=get_keyboard())
 
 
 def get_user_emo(user_data):
@@ -82,6 +103,17 @@ def get_user_emo(user_data):
         user_data['emo'] = emojize(choice(settings.USER_EMOJI), use_aliases=True)
         return user_data['emo']
 
+
+def get_keyboard():
+    """
+    :return: возвращаем нашу клавиатуру.
+    """
+    contact_button = KeyboardButton('Прислать контакты', request_contact=True)
+    location_button = KeyboardButton('Прислать координаты', request_location=True)
+    my_keyboard = ReplyKeyboardMarkup([['Прислать офис', 'Сменить аватарку'], [contact_button, location_button]],
+                                      resize_keyboard=True)
+    return my_keyboard
+
 def main():
     """
     Команды инициализации и запуска бота
@@ -92,6 +124,8 @@ def main():
     db.add_handler(CommandHandler('office', send_office_picture, pass_user_data=True))
     db.add_handler(RegexHandler('^(Прислать офис)$', send_office_picture, pass_user_data=True))
     db.add_handler(RegexHandler('^(Сменить аватарку)$', change_avatar, pass_user_data=True))
+    db.add_handler(MessageHandler(Filters.contact, get_contact, pass_user_data=True))
+    db.add_handler(MessageHandler(Filters.location, get_location, pass_user_data=True))
     db.add_handler(MessageHandler(Filters.text, talk_to_me, pass_user_data=True))
     logging.info('Блог запускается')  # При запуске бота нам будет писать в нашем bot.log
     mybot.start_polling()  # заставляем регуляно ходить на платформу телеграмм и проверять наличие сообщений.
