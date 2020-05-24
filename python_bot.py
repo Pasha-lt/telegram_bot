@@ -114,6 +114,7 @@ def get_keyboard():
                                       resize_keyboard=True)
     return my_keyboard
 
+
 def main():
     """
     Команды инициализации и запуска бота
